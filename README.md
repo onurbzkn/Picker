@@ -1,29 +1,66 @@
-# Picker
 <!DOCTYPE html>
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Picko Pro - Final</title>
+    <title>Picko</title>
     <style>
         :root {
             --bg-color: #0b101b;
             --accent: #00f2ff;
-            --secondary: #7000ff;
             --text: #ffffff;
             --die-size: 80px;
         }
 
-        body {
+        /* 3) Mavi Parlamayı ve Seçimi Kaldır */
+        * {
+            -webkit-tap-highlight-color: transparent; /* Mavi kutuyu kaldırır */
+            -webkit-touch-callout: none;
+            user-select: none;
+            outline: none;
+        }
+
+        body, html {
             margin: 0; padding: 0;
             background: var(--bg-color);
             color: var(--text);
             font-family: 'Segoe UI', sans-serif;
             overflow: hidden;
-            height: 100vh;
-            user-select: none;
-            -webkit-user-select: none;
+            height: 100%;
+            width: 100%;
         }
+
+        /* 1) & 2) Geri Sayımı Hayalet Yap (Yer kaplamaz, içeriği itmez) */
+        #countdown { 
+            position: absolute; 
+            top: 15%; left: 0; right: 0;
+            text-align: center;
+            font-size: 5rem; 
+            font-weight: 900; 
+            color: var(--accent); 
+            text-shadow: 0 0 25px var(--accent); 
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        .content {
+            height: calc(100% - 75px);
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .tab-content { 
+            display: none; 
+            width: 100%; 
+            height: 100%; 
+            position: relative;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .tab-content.active { display: flex; }
 
         /* Navigasyon */
         .bottom-nav {
@@ -35,40 +72,21 @@
             border-top: 1px solid rgba(255,255,255,0.05);
             z-index: 1000;
         }
-        .nav-item { color: #444; cursor: pointer; font-weight: bold; font-size: 11px; transition: 0.3s; text-transform: uppercase; text-align: center; }
+        .nav-item { color: #444; cursor: pointer; font-weight: bold; font-size: 11px; text-transform: uppercase; }
         .nav-item.active { color: var(--accent); text-shadow: 0 0 15px var(--accent); }
 
-        .tab-content { display: none; height: calc(100vh - 75px); width: 100%; position: relative; }
-        .tab-content.active { display: flex; flex-direction: column; align-items: center; justify-content: center; }
-
-        /* Finger Geri Sayım - Tam Orta */
-        #countdown { 
-            position: absolute; 
-            top: 15%; 
-            left: 0;
-            right: 0;
-            margin: 0 auto;
-            font-size: 5rem; 
-            font-weight: 900; 
-            color: var(--accent); 
-            text-shadow: 0 0 25px var(--accent); 
-            z-index: 20; 
-            text-align: center;
-            pointer-events: none;
-        }
-
+        /* Finger */
         #finger-area { width: 100%; height: 100%; touch-action: none; position: relative; }
         .touch-circle {
             position: absolute; width: 90px; height: 90px;
             border: 5px solid var(--accent); border-radius: 50%;
             transform: translate(-50%, -50%); pointer-events: none;
-            box-shadow: 0 0 25px var(--accent); z-index: 10;
+            box-shadow: 0 0 25px var(--accent);
         }
-        .touch-circle.winner { border-color: #00ff88; box-shadow: 0 0 50px #00ff88; scale: 1.3; transition: all 0.3s ease; }
-        .touch-circle.loser { border-color: #ff3366; opacity: 0.2; scale: 0.8; transition: all 0.3s ease; }
+        .touch-circle.winner { border-color: #00ff88; box-shadow: 0 0 50px #00ff88; scale: 1.3; transition: 0.3s; }
+        .touch-circle.loser { border-color: #ff3366; opacity: 0.2; scale: 0.8; transition: 0.3s; }
 
-        /* 3D Dice */
-        #dice { cursor: pointer; background: radial-gradient(circle, #1a2a4a 0%, #0b101b 100%); }
+        /* Dice 3D */
         .scene { width: var(--die-size); height: var(--die-size); perspective: 600px; }
         .cube {
             width: 100%; height: 100%; position: relative; transform-style: preserve-3d;
@@ -87,36 +105,28 @@
         .top { transform: rotateX(90deg) translateZ(40px); }
         .bottom { transform: rotateX(-90deg) translateZ(40px); }
 
-        /* Flow */
+        /* Flow Arrow */
         #arrow {
             width: 0; height: 0; border-left: 35px solid transparent; border-right: 35px solid transparent;
             border-bottom: 170px solid var(--accent); filter: drop-shadow(0 0 20px var(--accent));
             transition: transform 4s cubic-bezier(0.15, 0, 0.15, 1); transform-origin: 50% 100%; margin-bottom: 170px;
         }
 
-        /* Bilgi Metinleri - En Alt */
+        /* Bilgi Metinleri */
         .hint { 
-            position: absolute; 
-            bottom: 30px; 
-            left: 0;
-            right: 0;
-            text-align: center;
-            font-size: 10px; 
-            color: rgba(255,255,255,0.4); 
-            text-transform: uppercase; 
-            letter-spacing: 2px; 
-            pointer-events: none;
+            position: absolute; bottom: 30px; left: 0; right: 0;
+            text-align: center; font-size: 10px; color: rgba(255,255,255,0.4); 
+            text-transform: uppercase; letter-spacing: 2px; 
         }
 
-        /* Ayarlar */
+        /* Settings */
         .settings-list { width: 85%; max-width: 400px; }
         .setting-item {
             background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px;
             margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;
         }
         .color-dots { display: flex; gap: 10px; }
-        .dot { width: 30px; height: 30px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; }
-        .dot.active { border-color: white; transform: scale(1.1); }
+        .dot { width: 30px; height: 30px; border-radius: 50%; cursor: pointer; }
         .switch { position: relative; display: inline-block; width: 40px; height: 20px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; border-radius: 20px; }
@@ -132,17 +142,17 @@
     <div class="content">
         <div id="finger" class="tab-content active">
             <div id="finger-area"></div>
-            <div class="hint" data-tr="EN AZ 2 PARMAKLA DOKUN" data-en="TOUCH WITH AT LEAST 2 FINGERS">EN AZ 2 PARMAKLA DOKUN</div>
+            <div class="hint">EN AZ 2 PARMAKLA DOKUN</div>
         </div>
 
         <div id="dice" class="tab-content" onclick="rollDice()">
-            <div style="position: absolute; top: 20px; display: flex; gap: 10px;">
+            <div style="position: absolute; top: 20px; display: flex; gap: 10px; z-index: 10;">
                 <button onclick="event.stopPropagation(); setDice(1)" style="background:rgba(255,255,255,0.1); color:white; border:none; padding:10px 18px; border-radius:12px; font-weight:bold;">1 ZAR</button>
                 <button onclick="event.stopPropagation(); setDice(2)" style="background:rgba(255,255,255,0.1); color:white; border:none; padding:10px 18px; border-radius:12px; font-weight:bold;">2 ZAR</button>
                 <button onclick="event.stopPropagation(); setDice(3)" style="background:rgba(255,255,255,0.1); color:white; border:none; padding:10px 18px; border-radius:12px; font-weight:bold;">3 ZAR</button>
             </div>
             <div id="dice-display" style="display:flex; gap:40px;"></div>
-            <div class="hint" data-tr="ATMAK İÇİN DOKUN" data-en="TOUCH TO ROLL">ATMAK İÇİN DOKUN</div>
+            <div class="hint">ATMAK İÇİN DOKUN</div>
         </div>
 
         <div id="flow" class="tab-content" onclick="spinArrow()">
@@ -150,14 +160,14 @@
                 <div id="arrow"></div>
                 <div style="position:absolute; width:30px; height:30px; background:#fff; border-radius:50%; box-shadow:0 0 20px #fff;"></div>
             </div>
-            <div class="hint" data-tr="DÖNDÜRMEK İÇİN DOKUN" data-en="TOUCH TO SPIN">DÖNDÜRMEK İÇİN DOKUN</div>
+            <div class="hint">DÖNDÜRMEK İÇİN DOKUN</div>
         </div>
 
         <div id="settings" class="tab-content">
-            <h2 style="margin-bottom:30px;" data-tr="AYARLAR" data-en="SETTINGS">AYARLAR</h2>
+            <h2 style="margin-bottom:30px;">AYARLAR</h2>
             <div class="settings-list">
                 <div class="setting-item">
-                    <span data-tr="Tema Rengi" data-en="Theme Color">Tema Rengi</span>
+                    <span>Tema Rengi</span>
                     <div class="color-dots">
                         <div class="dot" style="background:#00f2ff;" onclick="setTheme('#00f2ff')"></div>
                         <div class="dot" style="background:#00ff88;" onclick="setTheme('#00ff88')"></div>
@@ -166,19 +176,15 @@
                     </div>
                 </div>
                 <div class="setting-item">
-                    <span data-tr="Titreşim" data-en="Vibration">Titreşim</span>
+                    <span>Titreşim</span>
                     <label class="switch"><input type="checkbox" id="vibrateToggle" checked><span class="slider"></span></label>
                 </div>
                 <div class="setting-item">
-                    <span data-tr="Ses Efektleri" data-en="Sound Effects">Ses Efektleri</span>
+                    <span>Ses Efektleri</span>
                     <label class="switch"><input type="checkbox" id="soundToggle" checked><span class="slider"></span></label>
                 </div>
-                <div class="setting-item">
-                    <span data-tr="Dil / Language" data-en="Language / Dil">Dil</span>
-                    <button onclick="toggleLang()" id="langBtn" style="background:none; border:1px solid #555; color:white; padding:5px 10px; border-radius:8px;">TR</button>
-                </div>
             </div>
-            <div style="margin-top:20px; font-size:12px; opacity:0.3;">Picko v4.1 - Hocama Özel</div>
+            <div style="margin-top:20px; font-size:12px; opacity:0.3;">Picko v4.2</div>
         </div>
     </div>
 
@@ -190,9 +196,6 @@
     </nav>
 
     <script>
-        let currentLang = 'tr';
-        const config = { accent: '#00f2ff', vibrate: true, sound: true };
-
         function showTab(id, el) {
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -201,18 +204,7 @@
             if(id === 'dice') setDice(1);
         }
 
-        function setTheme(color) {
-            document.documentElement.style.setProperty('--accent', color);
-            config.accent = color;
-        }
-
-        function toggleLang() {
-            currentLang = currentLang === 'tr' ? 'en' : 'tr';
-            document.getElementById('langBtn').innerText = currentLang.toUpperCase();
-            document.querySelectorAll('[data-tr]').forEach(el => {
-                el.innerText = el.getAttribute('data-' + currentLang);
-            });
-        }
+        function setTheme(color) { document.documentElement.style.setProperty('--accent', color); }
 
         function playSound(type) {
             if(!document.getElementById('soundToggle').checked) return;
@@ -293,7 +285,7 @@
 
         function resetFinger() { fingerArea.innerHTML = ""; touches = {}; isFinished = false; stopCountdown(); }
 
-        /* 3D Dice Logic */
+        /* 3D Dice */
         function setDice(n) {
             const container = document.getElementById('dice-display');
             container.innerHTML = "";
@@ -330,7 +322,7 @@
             });
         }
 
-        /* Flow Logic */
+        /* Flow */
         let currentRotation = 0;
         function spinArrow() {
             const arrow = document.getElementById('arrow');
@@ -339,7 +331,6 @@
             playSound('roll');
             if(document.getElementById('vibrateToggle').checked && window.navigator.vibrate) window.navigator.vibrate(20);
         }
-
         setDice(1);
     </script>
 </body>
